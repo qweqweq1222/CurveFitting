@@ -161,7 +161,7 @@ double Angle(QPointF& start, QPointF& end)
 #define NBREAK   (NCOEFFS - 2)
 
 
-std::vector<int> Interpolator::Filter(double trash){
+std::vector<int> Interpolator::Filter(double treshold){
     const size_t n = points_.size();
     const size_t ncoeffs = NCOEFFS;
     const size_t nbreak = NBREAK;
@@ -235,7 +235,7 @@ std::vector<int> Interpolator::Filter(double trash){
     
     double t_ = 0;
     double step = 0.01;
-    double min = 10000000;
+    double min = std::numeric_limits<int>::max();
     double r = 0;
     double param = 0.0;
 
@@ -246,9 +246,14 @@ std::vector<int> Interpolator::Filter(double trash){
         while(ti < points_.size() - 1 - step)
         {
             ti += step;
-            QPointF spl_p = QPointF(
-            gsl_bspline_eval(ti, Bx, bwx),
-            gsl_bspline_eval(ti, By, bwy)
+            gsl_bspline_eval(ti, Bx, bwx);
+            gsl_bspline_eval(ti, By, bwy);
+            double Xi, Yi;
+            double xerr, yerr;
+            gsl_multifit_linear_est(Bx, cx, cov, &Xi, &xerr);
+            gsl_multifit_linear_est(By, cy, cov, &Yi, &yerr);
+            auto spl_p = QPointF(
+                Xi, Yi
             );
             r = dst(points_[i], spl_p);
             if (min > r){
@@ -257,11 +262,14 @@ std::vector<int> Interpolator::Filter(double trash){
             }
         }
 
-        if (r > trash){
+        if (min > treshold){
             res.push_back(i);
         }
-
+        min = std::numeric_limits<int>::max();
     }
+
+
+
     gsl_bspline_free(bwx);
     gsl_bspline_free(bwy);
     gsl_vector_free(Bx);
