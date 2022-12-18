@@ -35,7 +35,7 @@ public:
     void deletePoint(int index);
     void addPoint(int index, QPointF p);
     double GetClosest(double x, double y); // вычисление ближайшей точки сплайна к заданной точке 
-   std::vector<int> Filter(double trash); // фильтрация массива точек
+    std::vector<int> Filter(double treshold); // фильтрация массива точек
     friend double CompareSplines(Interpolator& int1, Interpolator&  int2, int samplesCount); // вычисление метрики RMSE между сплайнами 
     char* rasterize(ScreenView& screen); // растеризация кривой
     std::vector<QPointF> Simplify(std::vector<QPointF>& pointList, float epsilon = 0.05); // алгоритм RDP
