@@ -12,3 +12,5 @@ find_package(TBB REQUIRED)<br />
 find_package(Eigen3 3.3 REQUIRED no_module)<br />
 
 target_link_libraries(${CMAKE_PROJECT_NAME} CurveFit::Spline)
+
+#include <Spline/lib_functions.h>
