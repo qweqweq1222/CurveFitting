@@ -1,7 +1,7 @@
 # CurveFitting
-git clone ...
-mkdir build && cd build
-sudo make install
+git clone ...<br />
+mkdir build && cd build<br />
+sudo make install<br />
 
 find_package(CurveFit COMPONENTS Spline REQUIRED)<br />
 find_package(Threads REQUIRED)<br />
