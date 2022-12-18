@@ -161,8 +161,124 @@ double Angle(QPointF& start, QPointF& end)
 #define NBREAK   (NCOEFFS - 2)
 
 
-std::vector<int> Interpolator::Filter(int group_size, double angle){
-    return {};
+std::vector<int> Interpolator::Filter(double trash){
+    const size_t n = points_.size();
+    const size_t ncoeffs = NCOEFFS;
+    const size_t nbreak = NBREAK;
+
+    size_t i, j;
+    gsl_bspline_workspace *bwx;
+    gsl_bspline_workspace *bwy;
+    gsl_vector *Bx;
+    gsl_vector *By;
+    double dy;
+
+    gsl_vector *cx, *w;
+    gsl_vector *cy;
+    gsl_vector *t, *x, *y;
+
+    gsl_matrix *X, *cov;
+    gsl_matrix *Y;
+    gsl_multifit_linear_workspace *mwx;
+    gsl_multifit_linear_workspace *mwy;
+    double chisq, Rsq, dof, tss;
+  
+    gsl_rng_env_setup();
+  
+    bwx = gsl_bspline_alloc(4, nbreak);
+    bwy = gsl_bspline_alloc(4, nbreak);
+    Bx = gsl_vector_alloc(ncoeffs);
+    By = gsl_vector_alloc(ncoeffs);
+  
+    t = gsl_vector_alloc(n);
+    x = gsl_vector_alloc(n);
+    y = gsl_vector_alloc(n);
+    X = gsl_matrix_alloc(n, ncoeffs);
+    Y = gsl_matrix_alloc(n, ncoeffs);
+    cx = gsl_vector_alloc(ncoeffs);
+    cy = gsl_vector_alloc(ncoeffs);
+    w = gsl_vector_alloc(n);
+    cov = gsl_matrix_alloc(ncoeffs, ncoeffs);
+    mwx = gsl_multifit_linear_alloc(n, ncoeffs);
+    mwy = gsl_multifit_linear_alloc(n, ncoeffs);
+  
+    for (i = 0; i < n; ++i)
+    {
+        double ti = i;
+        gsl_vector_set(t, i, ti);
+        gsl_vector_set(x, i, points_[i].x());
+        gsl_vector_set(y, i, points_[i].y());
+        gsl_vector_set(w, i, 1.0);
+    }
+ 
+    gsl_bspline_knots_uniform(0.0, n, bwx);
+    gsl_bspline_knots_uniform(0.0, n, bwy);
+  
+    for (i = 0; i < n; ++i)
+      {
+        double ti = gsl_vector_get(t, i);
+  
+        gsl_bspline_eval(ti, Bx, bwx);
+        gsl_bspline_eval(ti, By, bwy);
+  
+        for (j = 0; j < ncoeffs; ++j)
+          {
+            double Bxj = gsl_vector_get(Bx, j);
+            double Byj = gsl_vector_get(By, j);
+            gsl_matrix_set(X, i, j, Bxj);
+            gsl_matrix_set(Y, i, j, Byj);
+          }
+      }
+  
+    gsl_multifit_wlinear(X, w, x, cx, cov, &chisq, mwx);
+    gsl_multifit_wlinear(Y, w, y, cy, cov, &chisq, mwy);
+    
+    double t_ = 0;
+    double step = 0.01;
+    double min = 10000000;
+    double r = 0;
+    double param = 0.0;
+
+    std::vector<int> res;
+
+    for (int i = 0; i < points_.size(); ++i){ 
+        double ti = 0;
+        while(ti < points_.size() - 1 - step)
+        {
+            ti += step;
+            QPointF spl_p = QPointF(
+            gsl_bspline_eval(ti, Bx, bwx),
+            gsl_bspline_eval(ti, By, bwy)
+            );
+            r = dst(points_[i], spl_p);
+            if (min > r){
+                min = r;
+                param = t_;
+            }
+        }
+
+        if (r > trash){
+            res.push_back(i);
+        }
+
+    }
+    gsl_bspline_free(bwx);
+    gsl_bspline_free(bwy);
+    gsl_vector_free(Bx);
+    gsl_vector_free(By);
+    gsl_vector_free(t);
+    gsl_vector_free(x);
+    gsl_vector_free(y);
+    gsl_matrix_free(X);
+    gsl_matrix_free(Y);
+    gsl_vector_free(cx);
+    gsl_vector_free(cy);
+    gsl_vector_free(w);
+    gsl_matrix_free(cov);
+    gsl_multifit_linear_free(mwx);
+    gsl_multifit_linear_free(mwy);
+
+    return res;
 }
 /*__________________________________________________________________*/
 
