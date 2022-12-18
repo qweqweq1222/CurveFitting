@@ -1,5 +1,6 @@
 # CurveFitting
 git clone ...<br />
+cd CurveFitting <br />
 mkdir build && cd build<br />
 sudo make install<br />
 
